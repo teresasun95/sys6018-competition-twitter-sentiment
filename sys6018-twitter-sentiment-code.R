@@ -4,7 +4,7 @@ library(tidyverse)
 library(XML)
 library(tm)
 
-#Read in the Data
+# Read in the Data
 
 train = read.csv('train.csv', stringsAsFactors = FALSE)
 test = read.csv('test.csv', stringsAsFactors = FALSE)
@@ -16,7 +16,7 @@ tweet.cleaner = function(X) {
   get.tweets = function(X) { 
     tweets = data.frame(X[2], stringsAsFactors = FALSE)
     tweets = VCorpus(DataframeSource(tweets))
-    }
+  }
   
   tweets.clean = function(X) {
     tweets.clean = tm_map(get.tweets(X), stripWhitespace)                   # remove extra whitespace
@@ -25,7 +25,7 @@ tweet.cleaner = function(X) {
     tweets.clean = tm_map(tweets.clean, content_transformer(tolower))       # ignore case
     tweets.clean = tm_map(tweets.clean, removeWords, stopwords("english"))  # remove stop words
     tweets.clean = tm_map(tweets.clean, stemDocument)
-    }
+  }
   
   return(tweets.clean(X))
 }
@@ -36,37 +36,76 @@ tweet.unpacker = function(N) {
     N[[X]]$content})
 }
 
-# create test and train VCorpus
-train.tweets.clean = tweet.cleaner(train)
-test.tweets.clean = tweet.cleaner(test)
-
-# create dataframes of test and train with cleaned tweets
-train.cleaned = data.frame(sentiment = train$sentiment , text = unlist(tweet.unpacker(train.tweets.clean)))                 
-test.cleaned = data.frame(id = test$id , text = unlist(tweet.unpacker(test.tweets.clean))) 
-
-########################
-### knn from scratch ###
-########################
+# function to make knn
 knn_pred <- function(response, train, test, k){
-  n = nrow(test)
-  pred <- rep(NA, n) # create a list to store the predictions
-  y <- train[,response] # get the response variable from training set
-  train[[response]]=NULL # remove the response variable from training set
+  n = length(test)
+  pred <- list() # create a list to store the predictions
+  #y <- train[,response] # get the response variable from training set
+  
+  #train[[response]]=NULL # remove the response variable from training set
   #test[[response]]=NULL 
   for(i in 1:n){
-    dist <- apply(train,1, function(x) sum((x-test[i,])^2)) 
+    dist <- apply(train,1, function(x) sum((x-test[i])^2)) 
     # calculate the euclidean distance for each instance in training set
     ordered <- order(dist)[1:k] # sort the list of distances
     freq <- table(y[ordered]) # compute the frequencies of each class
-    #print(freq)
-    # print(names(freq))
+    print(freq)
+    print(names(freq))
     most.frequent.classes = names(freq)[freq == max(freq)]
     print(most.frequent.classes)
     pred[i] = sample(most.frequent.classes, 1)
   }
   factor(pred, levels=levels(y))
 }
-knn_pred('sentiment',train.cleaned,test.cleaned,k=3)
+
+# create test and train VCorpus
+train.tweets.clean = tweet.cleaner(train)
+test.tweets.clean = tweet.cleaner(test)
+
+data = data.frame(sentimentID = c(train$sentiment,test$id), text = c(train$text,test$text))
+
+data.clean = tweet.cleaner(data)
+data.tfidf = DocumentTermMatrix(data.clean, control = list(weighting = weightTfIdf))
+data.b = removeSparseTerms(data.tfidf, .99) #if you want to play with the sparceness do so here, to ensure the variables remain equal
+data.b.df = data.frame(as.matrix(data.b))
+
+train.clean = data.frame(sentiment = train$sentiment, data.b.df[1:981,])
+test.clean = data.frame(id = test$id, data.b.df[982:1960,])
+
+# tfidf
+train.tfidf = DocumentTermMatrix(train.tweets.clean, control = list(weighting = weightTfIdf))
+test.tfidf = DocumentTermMatrix(test.tweets.clean, control = list(weighting = weightTfIdf))
+
+# unsparce
+train.tfidf.99 = removeSparseTerms(train.tfidf, .95)
+test.tfidf.99 = removeSparseTerms(test.tfidf, .95)
+
+# combine tfidf into dataframes
+train.data = data.frame(sentiment = train$sentiment, as.matrix(train.tfidf.99),stringsAsFactors = FALSE)
+test.data = data.frame(id =  test$id, as.matrix(test.tfidf.99),stringsAsFactors = FALSE)
+
+test.data <- test.data[,-1]
+set.seed(1)
+knnpred = knn_pred('sentiment',train.data,test.data,k=1)
+
+train <- rbind(iris3[1:25,,1], iris3[1:25,,2], iris3[1:25,,3])
+test <- rbind(iris3[26:50,,1], iris3[26:50,,2], iris3[26:50,,3])
+test
+cl <- factor(c(rep("s",25), rep("c",25), rep("v",25)))
+train <- cbind(train,cl)
+knn_pred('cl',train,test,1)
+x <- c(1,2)
+y <- c(3,4)
+cl <- factor(c(rep('a',2)))
+# train <- cbind(x,cl)
+knn_pred('cl',x,y,1)
+
+td = iris[sample(1:nrow(iris), 20),]
+test <- td[,-5]
+knn_pred("Species", td, test, k = 3)
+
+
+
 
 
 

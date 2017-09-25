@@ -58,12 +58,29 @@ knn_pred <- function(response, train, test, k){
     # calculate the euclidean distance for each instance in training set
     ordered <- order(dist)[1:k] # sort the list of distances
     freq <- table(y[ordered]) # compute the frequencies of each class
-    #print(freq)
-    # print(names(freq))
+    print(freq)
+    print(names(freq))
     most.frequent.classes = names(freq)[freq == max(freq)]
     print(most.frequent.classes)
     pred[i] = sample(most.frequent.classes, 1)
   }
   factor(pred, levels=levels(y))
 }
-knn_pred('sentiment',train.cleaned,test.cleaned,k=3)
+
+train <- rbind(iris3[1:25,,1], iris3[1:25,,2], iris3[1:25,,3])
+test <- rbind(iris3[26:50,,1], iris3[26:50,,2], iris3[26:50,,3])
+cl <- factor(c(rep("s",25), rep("c",25), rep("v",25)))
+train <- cbind(train,cl)
+knn(train, test, cl, k = 3)
+knn_pred('cl',train, test, k = 3)
+
+
+
+
+
+td = iris[sample(1:nrow(iris), 20),]
+test <- iris[sample(1:nrow(iris),10),]
+test <- test[,-5]
+test
+knn_pred("Species", td, test, k = 3)
+

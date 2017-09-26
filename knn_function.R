@@ -38,7 +38,7 @@ data = data.frame(sentimentID = c(train$sentiment,test$id), text = c(train$text,
 
 data.clean = tweet.cleaner(data)
 data.tfidf = DocumentTermMatrix(data.clean, control = list(weighting = weightTfIdf))
-data.b = removeSparseTerms(data.tfidf, .99) #if you want to play with the sparceness do so here, to ensure the variables remain equal
+data.b = removeSparseTerms(data.tfidf, .97) #if you want to play with the sparceness do so here, to ensure the variables remain equal
 data.b.df = data.frame(as.matrix(data.b))
 
 train.clean = data.frame(sentiment = train$sentiment, data.b.df[1:981,])

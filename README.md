@@ -39,6 +39,6 @@ The model was stripped of weaker variables leaving it with 53 variables
 The models were then cross validated to and the stripped down model performed better than the full one.
 
 From that predictions were created on the test set and output as a csv in "lmpred.csv"
-
+This returned a Kaggle Score of 0.51738 
 
 

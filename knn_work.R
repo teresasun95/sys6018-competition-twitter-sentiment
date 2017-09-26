@@ -46,79 +46,15 @@ test.clean = data.frame(id = test$id, data.b.df[982:1960,])
 
 test.clean <- test.clean[,-1]
 
-
-
-
-####### separate data into training and validation sets
-
-sub<-sample(1:nrow(train.clean), size = 0.8*nrow(data.train))
-train<-data.train[sub, ]
-valid<- data.train[-sub, ]
-
-####################
-#### parametric ####
-####################
-train.clean$sentiment <- as.factor(train.clean$sentiment)
-levels(train.clean$sentiment)
-sum(is.na(train.clean$sentiment))
-
-model <- lm(sentiment~., data=train.clean)
-summary(model)
-
-model1 <- lm(sentiment~ cant + dont + googl + hope+insur+less+like+much+need+one+thing+use+vehicl+wait+want+yes, data=data.clean)
-
-library(DAAG)
-
-cv.err <- cv.lm(train.clean,model)
-sum(cv.err$Predicted==cv.err$cvpred)
-cv.err$
-
-
-
-
-
 ##################
 ####### knn ######
 ##################
-# train.clean[['sentiment']] = NULL
-# y <- train[,'sentiment']
-y
-Eudist <- function(x1,x2){
-  d=sum((x1-x2)^2)
-  return (sqrt(d))
-}
-n = nrow(test.clean)
-pred <- list() # create a list to store the predictions
-y <- train.clean[,'sentiment'] # get the response variable from training set
-train.clean[['sentiment']]=NULL
 
-for(i in 1:n){
-  dist <- apply(train.clean,1, function(x) sum((x-test.clean[i,])^2)) 
-  #print(dist)
-  # calculate the euclidean distance for each instance in training set
-  ordered <- order(dist)[1:5] # sort the list of distances
-  freq <- table(y[ordered]) # compute the frequencies of each class
-  #print(freq)
-  #print(names(freq))
-  most.frequent.classes = names(freq)[freq == max(freq)]
-  #print(most.frequent.classes)
-  pred[i] = sample(most.frequent.classes, 1)
-}
-print(pred)
-
-finalpred5<- data.frame(cbind(test$id,pred))
-colnames(finalpred5)<- c("id", "sentiment")
-df5 = as.matrix(finalpred5)
-write.csv(df5, "sys6018-twitter-sentiment-KNN-k5-97.csv", row.names = FALSE)
-
-
-finalpred<- data.frame(cbind(test$id,pred))
-colnames(finalpred)<- c("id", "sentiment")
-df = as.matrix(finalpred)
-write.csv(df, "sys6018-twitter-sentiment-KNN.csv", row.names = FALSE)
-
-
-
+# knn function from scratch
+# response: the response variable in training data
+# train: training data with all the variables and response variable
+# test: testing data
+# k
 
 knn_pred <- function(response, train, test, k) {
   n = nrow(test)
@@ -130,22 +66,66 @@ knn_pred <- function(response, train, test, k) {
     # calculate the euclidean distance for each instance in training set
     ordered <- order(dist)[1:k] # sort the list of distances
     freq <- table(y[ordered]) # compute the frequencies of each class
-    #print(freq)
-    #print(names(freq))
     most.frequent.classes = names(freq)[freq == max(freq)]
-    #print(most.frequent.classes)
     pred<-c(pred,sample(most.frequent.classes,1))
   }
-  # factor(pred, levels=levels(y))
-  # print(pred)
   return(pred)
 }
 
-knn_pred('sentiment',train.clean,test.clean,k=5)
-pred
-finalpred2<- data.frame(cbind(test$id,pred))
-colnames(finalpred2)<- c("id", "sentiment")
-df2 = as.matrix(finalpred2)
-write.csv(df2, "sys6018-twitter-sentiment-KNN.csv", row.names = FALSE)
+pred <- knn_pred('sentiment',train.clean, test.clean,k = 3)
+pred2 <- knn_pred('sentiment',train.clean, test.clean,k = 5)
+
+## The KNN function we created took a long time (>20 minutes) to run. 
+## Though the function gave no erros, it didn't run as we expected.
+## So we decided to break the function into pieces, which worked smoothly. 
+## The only thing needs to change is the k value. 
+
+# for k = 3
+n = nrow(test.clean)
+pred <- list() # create a list to store the predictions
+y <- train.clean[,'sentiment'] # get the response variable from training set
+train.clean[['sentiment']]=NULL
+
+for(i in 1:n){
+  dist <- apply(train.clean,1, function(x) sum((x-test.clean[i,])^2)) 
+  # calculate the euclidean distance for each instance in training set
+  ordered <- order(dist)[1:3] # sort the list of distances
+  freq <- table(y[ordered]) # compute the frequencies of each class
+  most.frequent.classes = names(freq)[freq == max(freq)]
+  pred[i] = sample(most.frequent.classes, 1)
+}
+print(pred)
+
+# for k = 5
+
+n = nrow(test.clean)
+pred <- list() # create a list to store the predictions
+y <- train.clean[,'sentiment'] # get the response variable from training set
+train.clean[['sentiment']]=NULL
+
+for(i in 1:n){
+  dist <- apply(train.clean,1, function(x) sum((x-test.clean[i,])^2)) 
+  # calculate the euclidean distance for each instance in training set
+  ordered <- order(dist)[1:5] # sort the list of distances
+  freq <- table(y[ordered]) # compute the frequencies of each class
+  most.frequent.classes = names(freq)[freq == max(freq)]
+  pred[i] = sample(most.frequent.classes, 1)
+}
+print(pred)
+
+
+## we compared the results with k=1,k=3,k=5
+## k=5 gives us the best result
+
+
+# write the csv file for submission on Kaggle
+# our final submission on kaggle with KNN
+finalpred5<- data.frame(cbind(test$id,pred))
+colnames(finalpred5)<- c("id", "sentiment")
+df5 = as.matrix(finalpred5)
+write.csv(df5, "sys6018-twitter-sentiment-KNN-k5-97.csv", row.names = FALSE)
+
+
+
 
 
